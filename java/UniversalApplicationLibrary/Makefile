@@ -1,5 +1,6 @@
 SRCFILES := $(shell find src -name \*.java)
-PACKAGES := $(shell find src -name \*.java | sed -E s/^src\\/\|\\/[^\\/]+$$//g | sort | uniq | tr / .)
+RESFILES := $(shell find src -type f \! -name .\* \! -name \*.java | sed s/^src\\///)
+PACKAGES := $(shell find src -name \*.java | sed -E s/^src\\/\|\\/[^\\/]+$$//g | grep -v \\.java$$ | sort | uniq | tr / .)
 
 all: clean bin doc ual.jar
 
@@ -15,11 +16,15 @@ eclipseclean:
 
 bin: src
 	mkdir -p bin
-	javac -source 1.5 -target 1.5 -sourcepath src $(SRCFILES) -d bin
+ifeq ($(origin JAVACFLAGS), undefined)
+	$(eval JAVACFLAGS = $(shell dep/minJavaVerOpts))
+endif
+	javac $(JAVACFLAGS) -sourcepath src $(SRCFILES) -d bin
+	$(foreach res,$(RESFILES),cp src/$(res) bin/$(res);)
 
 doc: src
 	mkdir -p doc
-	javadoc -sourcepath src $(PACKAGES) -d doc
+	javadoc $(JAVADOCFLAGS) -sourcepath src $(PACKAGES) -d doc
 
 ual.jar: bin
 	export COPYFILE_DISABLE=true
